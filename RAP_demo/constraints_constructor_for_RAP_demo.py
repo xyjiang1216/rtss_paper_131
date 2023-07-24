@@ -15,7 +15,70 @@ def construct_constraints_for_RAP_demo(
     constraint_formula_set = []
 
     start = time.time_ns()
-    # 1. contention-free constraint
+    # 1. period constraint
+    for stream_instance_obj_set_per_stream in stream_instance_obj_set:
+        for stream_instance_obj in stream_instance_obj_set_per_stream:
+            formula = And(stream_instance_obj.omega >= 0,
+                          stream_instance_obj.omega <
+                          stream_instance_obj.period_scaled_to_raster)
+
+            constraint_formula_set.append(formula)
+
+    end = time.time_ns()
+    time_used_in_second = (end - start) / 1000000000
+
+    start = time.time_ns()
+    # 2. sequence constraint
+    for stream_instance_obj in stream_instance_obj_set:
+        for i in range(len(stream_instance_obj) - 1):
+            ax_link_id = stream_instance_obj[i].link_id
+            xb_link_id = stream_instance_obj[i + 1].link_id
+
+            xb_omega = stream_instance_obj[i + 1].omega
+            ax_omega = stream_instance_obj[i].omega
+
+            formula = (xb_omega -
+                       ax_omega >=
+                       1)
+            constraint_formula_set.append(formula)
+
+    end = time.time_ns()
+    time_used_in_second = (end - start) / 1000000000
+
+    start = time.time_ns()
+    # 3. queue resource constraint
+    for stream_instance_set in stream_instance_obj_set:
+        for stream_instance in stream_instance_set:
+            link_id = stream_instance.link_id
+            formula = (stream_instance.rho < link_obj_set[link_id].st_queues,
+                       stream_instance.rho >= 0)
+            constraint_formula_set.append(formula)
+
+    end = time.time_ns()
+    time_used_in_second = (end - start) / 1000000000
+
+    start = time.time_ns()
+    # 4. deadline constraint
+    stream_id = 0
+    for stream_instance_obj_set_per_stream in stream_instance_obj_set:
+        latency_requirement = stream_obj_set[stream_id].latency_requirement
+        src_omega = stream_instance_obj_set_per_stream[0].omega
+        src_link_id = stream_instance_obj_set_per_stream[0].link_id
+
+        dst_omega = stream_instance_obj_set_per_stream[-1].omega
+        dst_link_id = stream_instance_obj_set_per_stream[-1].link_id
+
+        formula = ((dst_omega - src_omega + 1) * raster + sync_precision <=
+                   latency_requirement)
+        constraint_formula_set.append(formula)
+
+        stream_id += 1
+
+    end = time.time_ns()
+    time_used_in_second = (end - start) / 1000000000
+
+    start = time.time_ns()
+    # 5. contention-free constraint
     for link in link_obj_set:
         stream_set = link.stream_set
 
@@ -48,7 +111,7 @@ def construct_constraints_for_RAP_demo(
     time_used_in_second = (end - start) / 1000000000
 
     start = time.time_ns()
-    # 2. Zero aggregation constraint
+    # 6. zero aggregation constraint
     for link in link_obj_set:
         stream_set = link.stream_set
         link_id = link.link_id
@@ -105,65 +168,36 @@ def construct_constraints_for_RAP_demo(
     end = time.time_ns()
     time_used_in_second = (end - start) / 1000000000
 
-    start = time.time_ns()
-    # 3. queue resource constraint
-    for stream_instance_set in stream_instance_obj_set:
-        for stream_instance in stream_instance_set:
-            link_id = stream_instance.link_id
-            formula = (stream_instance.rho < link_obj_set[link_id].st_queues,
-                       stream_instance.rho >= 0)
-            constraint_formula_set.append(formula)
+    # 7. single frame per raster constraint
+    for link in link_obj_set:
+        stream_set = link.stream_set
+        for i in range(len(stream_set)):
+            for j in range(len(stream_set)):
+                if i != j:
+                    i_stream_id = stream_set[i]['stream_id']
+                    i_ab_hop_id = stream_set[i]['hop_id']
+                    j_stream_id = stream_set[j]['stream_id']
+                    j_ab_hop_id = stream_set[j]['hop_id']
 
-    end = time.time_ns()
-    time_used_in_second = (end - start) / 1000000000
+                    j_period = stream_obj_set[j_stream_id].period
+                    i_period = stream_obj_set[i_stream_id].period
 
-    start = time.time_ns()
-    # 4. sequence constraint
-    for stream_instance_obj in stream_instance_obj_set:
-        for i in range(len(stream_instance_obj) - 1):
-            ax_link_id = stream_instance_obj[i].link_id
-            xb_link_id = stream_instance_obj[i + 1].link_id
+                    if i_ab_hop_id != 0 and j_ab_hop_id != 0:
 
-            xb_omega = stream_instance_obj[i + 1].omega
-            ax_omega = stream_instance_obj[i].omega
+                        i_xa_hop_id = stream_set[i]['hop_id'] - 1
+                        j_ya_hop_id = stream_set[j]['hop_id'] - 1
 
-            formula = (xb_omega -
-                       ax_omega >=
-                       1)
-            constraint_formula_set.append(formula)
+                        j_ya_omega = stream_instance_obj_set[j_stream_id][j_ya_hop_id].omega
+                        i_xa_omega = stream_instance_obj_set[i_stream_id][i_xa_hop_id].omega
 
-    end = time.time_ns()
-    time_used_in_second = (end - start) / 1000000000
+                        i_j_cycle_period = compute_cycle_period(*[i_period, j_period])
 
-    start = time.time_ns()
-    # 5. period constraint
-    for stream_instance_obj_set_per_stream in stream_instance_obj_set:
-        for stream_instance_obj in stream_instance_obj_set_per_stream:
-            formula = And(stream_instance_obj.omega >= 0,
-                          stream_instance_obj.omega <
-                          stream_instance_obj.period_scaled_to_raster)
+                        for k in range(int(math.ceil(i_j_cycle_period / i_period))):
+                            for l in range(math.ceil(i_j_cycle_period / j_period)):
+                                formula = (j_ya_omega+l * j_period / raster !=
+                                           i_xa_omega + k * i_period / raster)
 
-            constraint_formula_set.append(formula)
-
-    end = time.time_ns()
-    time_used_in_second = (end - start) / 1000000000
-
-    start = time.time_ns()
-    # 6. end-to-end constraint
-    stream_id = 0
-    for stream_instance_obj_set_per_stream in stream_instance_obj_set:
-        latency_requirement = stream_obj_set[stream_id].latency_requirement
-        src_omega = stream_instance_obj_set_per_stream[0].omega
-        src_link_id = stream_instance_obj_set_per_stream[0].link_id
-
-        dst_omega = stream_instance_obj_set_per_stream[-1].omega
-        dst_link_id = stream_instance_obj_set_per_stream[-1].link_id
-
-        formula = ((dst_omega - src_omega + 1) * raster + sync_precision <=
-                   latency_requirement)
-        constraint_formula_set.append(formula)
-
-        stream_id += 1
+                                constraint_formula_set.append(formula)
 
     end = time.time_ns()
     time_used_in_second = (end - start) / 1000000000

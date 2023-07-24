@@ -73,6 +73,7 @@ the last sentence Section-4-2 in citation#18.
 
 
 **4. Deadline Constraint.**
+
 TS streams have a strict end-to-end deadline.
 The planned end-to-end delay must be 
 less than the allowed maximum end-to-end delay.
