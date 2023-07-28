@@ -3,14 +3,14 @@ size:1500
 period:20000
 latency_requirement:20000
 jitter_requirement:200
-route:5 1 2
+route:3 0 4
 
 stream_id:1
 size:1500
 period:20000
 latency_requirement:20000
 jitter_requirement:200
-route:5 1 2
+route:3 0 4
 
 stream_id:2
 size:1500
@@ -31,21 +31,21 @@ size:1500
 period:20000
 latency_requirement:20000
 jitter_requirement:200
-route:3 0 4
+route:5 1 2
 
 stream_id:5
 size:1500
 period:20000
 latency_requirement:20000
 jitter_requirement:200
-route:5 1 2
+route:3 0 4
 
 stream_id:6
 size:1500
 period:20000
 latency_requirement:20000
 jitter_requirement:200
-route:5 1 2
+route:3 0 4
 
 stream_id:7
 size:1500
@@ -80,7 +80,7 @@ size:1500
 period:20000
 latency_requirement:20000
 jitter_requirement:200
-route:5 1 2
+route:3 0 4
 
 stream_id:12
 size:1500
@@ -94,35 +94,35 @@ size:1500
 period:20000
 latency_requirement:20000
 jitter_requirement:200
-route:5 1 2
+route:3 0 4
 
 stream_id:14
 size:1500
 period:20000
 latency_requirement:20000
 jitter_requirement:200
-route:5 1 2
+route:3 0 4
 
 stream_id:15
 size:1500
 period:20000
 latency_requirement:20000
 jitter_requirement:200
-route:5 1 2
+route:3 0 4
 
 stream_id:16
 size:1500
 period:20000
 latency_requirement:20000
 jitter_requirement:200
-route:3 0 4
+route:5 1 2
 
 stream_id:17
 size:1500
 period:20000
 latency_requirement:20000
 jitter_requirement:200
-route:5 1 2
+route:3 0 4
 
 stream_id:18
 size:1500
@@ -136,4 +136,4 @@ size:1500
 period:20000
 latency_requirement:20000
 jitter_requirement:200
-route:5 1 2
+route:3 0 4
